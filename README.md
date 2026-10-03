@@ -1,73 +1,60 @@
-# Desktop clap → Jarvis-style welcome
+# Jarvis: Automation Assistant & FastAPI Web Service
 
-Python script that listens to your default microphone and runs a **double-clap** welcome flow (Spotify, Chrome windows, ElevenLabs voice, Cursor). See constants at the top of `jarvis.py` for behavior and tuning.
+A modern Jarvis automation assistant providing both a **FastAPI web backend** for remote clients/mobile phones and an **Android application**.
 
-## Setup
+## FastAPI Web Service (`jarvis.py`)
 
-From this project directory:
+Converted from the local desktop script into a FastAPI web application without local desktop hardware/soundcard dependencies.
 
-```bash
-python -m pip install -r requirements.txt
-```
-
-## Environment variables
-
-The script loads a **`.env` file** in the same folder as `jarvis.py` (via `python-dotenv`). You can also set variables in the shell.
-
-### Required (ElevenLabs welcome line)
-
-| Variable | Purpose |
-| -------- | ------- |
-| `ELEVENLABS_API_KEY` | API key from [ElevenLabs](https://elevenlabs.io). |
-| `ELEVENLABS_VOICE_ID` | Voice ID from the ElevenLabs app (My Voices / library). |
-
-Without these, the welcome speech is skipped (other actions may still run).
-
-### Optional
-
-| Variable | Purpose |
-| -------- | ------- |
-| `ELEVENLABS_MODEL_ID` | TTS model (default in code: `eleven_multilingual_v2`). |
-| `ELEVENLABS_OUTPUT_FORMAT` | e.g. `pcm_24000` (must match playback expectations). |
-| `ELEVENLABS_PCM_SAMPLE_RATE` | Override PCM sample rate if it differs from the format name. |
-| `JARVIS_WELCOME_CACHE_DIR` | Custom folder for cached welcome WAV (default: `.cache/jarvis_welcome/` under the project). |
-| `JARVIS_INPUT_DEVICE` | Optional mic override: **integer** index or **substring** of the device name. If unset, the script uses the Windows default; when that mic is silent, it auto-picks the loudest working input. List devices: `python -c "import sounddevice as sd; print(sd.query_devices())"`. |
-| `CLAUDE_CODE_URL` | URL opened for Claude in Chrome (default: new chat). |
-| `TASARADAR_URL` | URL opened for Tasaradar in Chrome (default: `https://tasaradar.com`). `BINANCE_BTC_URL` is still read as a fallback if set. |
-| `CHROME_NEW_WINDOW_WAIT_S` | Seconds to wait for a new Chrome window on Windows (default `25`). |
-| `CHROME_WINDOW_WIDTH` / `CHROME_WINDOW_HEIGHT` | Windowed Chrome size when not fullscreen. |
-
-Example `.env`:
-
-```env
-ELEVENLABS_API_KEY=your_key_here
-ELEVENLABS_VOICE_ID=your_voice_id_here
-```
-
-## Run
+### Installation
 
 ```bash
+pip install -r requirements.txt
+```
+
+### Running the Server
+
+```bash
+uvicorn jarvis:app --host 0.0.0.0 --port 8000 --reload
+# Or directly:
 python jarvis.py
 ```
 
-Allow the microphone if Windows prompts you. Stop with **Ctrl+C**.
+### HTTP Endpoints
 
-## Tuning
+1. **`POST /chat`**: Accepts JSON payload for text prompts and commands.
+   - **Request**:
+     ```json
+     {
+       "prompt": "Welcome home sir",
+       "generate_speech": true
+     }
+     ```
+   - **Response**:
+     ```json
+     {
+       "reply": "Welcome home sir...",
+       "actions": {
+         "spotify_music": "https://open.spotify.com/track/...",
+         "claude_code": "https://claude.ai/new",
+         "binance_btc": "https://www.binance.com/en/trade/BTC_USDT",
+         "dev_tool": "https://cursor.com"
+       },
+       "triggered": true,
+       "audio_url": "/audio/hash.mp3",
+       "timestamp": 1696320000.0
+     }
+     ```
 
-Edit the constants at the top of `jarvis.py`:
+2. **`POST /voice`**: Multipart form upload for audio files recorded from mobile phones.
+   - **Form Field**: `file` (WAV, MP3, M4A, AAC)
+   - Performs DSP transient analysis to detect double-claps or voice triggers.
+   - Executes the welcome protocol and returns action links with synthesized voice audio.
 
-| Constant      | Effect                                                            |
-| ------------- | ----------------------------------------------------------------- |
-| `SPIKE_RATIO` | Increase if you get false triggers; decrease if claps are missed. |
-| `COOLDOWN_S`  | Minimum time between two logged claps.                            |
-| `BLOCK_MS`    | Larger = slightly less CPU, a bit less precise timing.            |
-| `MIN_RMS`     | Floor on how loud a block must be (helps in very quiet rooms).  |
-| `SAMPLE_RATE` | Try `48000` if your device does not like `44100`.                 |
+3. **`GET /`**: Mobile-friendly interactive web console to test `/chat` and `/voice` directly in the browser.
+4. **`GET /actions`**: Returns the active routine action links.
+5. **`GET /docs`**: Interactive Swagger documentation.
 
-## Troubleshooting
+## Android Client
 
-- **Wrong or quiet mic:** On startup the script probes your default Windows input. If it is silent, it **auto-selects** the loudest working mic. To force a specific device, set `JARVIS_INPUT_DEVICE` in `.env` (index or name substring from `sounddevice.query_devices()`).
-- **PortAudio / audio errors:** Update audio drivers or try another `SAMPLE_RATE`.
-- **No reaction to claps:** Lower `SPIKE_RATIO` slightly or speak/clap closer to the mic.
-- **Spam logs:** Raise `SPIKE_RATIO` or `COOLDOWN_S`.
-- **No welcome speech:** Set `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID` in `.env` and restart the terminal so variables load.
+The native Android app provides a live DSP double-clap detector with an Arc Reactor HUD, real-time audio spectrum visualization, and protocol automation triggers.

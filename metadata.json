@@ -1,0 +1,10 @@
+{
+  "name": "Jarvis",
+  "description": "Double-clap detector and Jarvis automation assistant for launching routines, music, and AI tools",
+  "requestFramePermissions": [
+    "RECORD_AUDIO"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

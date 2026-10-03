@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Jarvis</string>
+    <string name="clap_listener_title">Clap Detection</string>
+    <string name="status_listening">Listening for Double Clap</string>
+    <string name="status_idle">Detection Idle</string>
+    <string name="status_first_clap">First Clap Detected! Waiting...</string>
+    <string name="status_triggered">Double Clap Triggered!</string>
+    <string name="run_routine_btn">Trigger Routine Now</string>
+    <string name="start_listening_btn">Start Listening</string>
+    <string name="stop_listening_btn">Stop Listening</string>
+    <string name="perm_mic_required">Microphone permission is required to detect claps.</string>
+    <string name="grant_permission">Grant Permission</string>
+</resources>
